@@ -1,22 +1,33 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
-export default function Login() {
+export default function Login({ setLoginUser, onLogin }) {
+  const navigate = useNavigate();
+
   const [form, setForm] = useState({
     email: "",
     password: "",
   });
-    
-  console.log(form);
 
   const handleChange = (e) => {
-
     setForm({
       ...form,
       [e.target.name]: e.target.value,
     });
-    
   };
+
+  const login = (event) => {
+
+    event.preventDefault();
+    const {email, password} = form;
+    axios.post("http://localhost:3020/login", form).then((res) => {
+      setLoginUser(res.data.name);
+      onLogin({email, password});
+      navigate('/');
+    });
+  };
+
   return (
     <>
       <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
@@ -32,7 +43,7 @@ export default function Login() {
         </div>
 
         <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-          <form className="space-y-6" action="#" method="POST">
+          <form className="space-y-6" method="POST">
             <div>
               <label
                 htmlFor="email"
@@ -86,6 +97,7 @@ export default function Login() {
             <div>
               <button
                 type="submit"
+                onClick={login}
                 className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
               >
                 Sign in
@@ -93,14 +105,18 @@ export default function Login() {
             </div>
           </form>
 
-          <p className="mt-10 text-center text-sm text-gray-500">
-            Not a member?{" "}
-            <Link to="/register">
-              <a href="#" className="font-semibold leading-6 text-indigo-600 hover:text-indigo-500">
-                Register Now
-              </a>
-            </Link>
-          </p>
+          <div>
+            <p className="mt-10 text-center text-sm text-gray-500">
+              Not a member?{" "}
+            </p>
+            <ul className="list-none">
+              <Link to="/register">
+                <li className="font-semibold list-none leading-6 text-indigo-600 hover:text-indigo-500">
+                  Register Now
+                </li>
+              </Link>
+            </ul>
+          </div>
         </div>
       </div>
     </>

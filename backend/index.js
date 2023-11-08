@@ -3,10 +3,26 @@ import dbConnect from "./db/dbConnect.js";
 import bcrypt from "bcrypt";
 import User from "./model/User.js";
 import jwt from "jsonwebtoken";
+import auth from "./auth.js";
+import cors from "cors";
 
 const app = express();
+const router = express.Router();
 
 dbConnect();
+app.use(express.json());
+app.use(express.urlencoded());
+app.use(cors());
+
+// free endpoint
+app.get("/free-endpoint", auth, (request, response) => {
+  response.json({ message: "You are free to access me anytime" });
+});
+
+// authentication endpoint
+app.get("/auth-endpoint", auth, (request, response) => {
+  response.json({ message: "You are authorized to access me" });
+});
 
 app.post("/login", (request, response) => {
   User.findOne({ email: request.body.email })
@@ -35,6 +51,7 @@ app.post("/login", (request, response) => {
           //   return success response
           response.status(200).send({
             message: "Login Successful",
+            name: user.name,
             email: user.email,
             token,
           });
@@ -55,28 +72,28 @@ app.post("/login", (request, response) => {
     });
 });
 
-app.post("/register", (request, response) => {
-  bcrypt.hash(request.body.password, 10).then((hashedPassword) => {
-    const user = new User({
-      email: request.body.email,
+app.post("/register", async (request, response) => {
+  try {
+    const { name, email, ...data } = request.body;
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      return response.status(404).json({ message: "USER_ALREADY_EXISTS" });
+    }
+
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+    const newUser = new User({
+      ...data,
+      name,
+      email,
       password: hashedPassword,
     });
-
-    user
-      .save()
-      .then((result) => {
-        response.status(201).send({
-          message: "User Created Successfully",
-          result,
-        });
-      })
-      .catch((error) => {
-        response.status(500).send({
-          message: "Error creating user",
-          error,
-        });
-      });
-  });
+    console.log(name);
+    await newUser.save();
+    response.status(200).json({ message: "SIGNUP_SUCCESS" });
+  } catch (err) {
+    response.status(500).json({ message: err });
+  }
 });
 
 app.listen(3020, () => {
